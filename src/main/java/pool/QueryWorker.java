@@ -19,7 +19,6 @@ public class QueryWorker implements Runnable {
      */
     public QueryWorker(Event event) {
         this.event = event;
-        System.out.println(event.getId());
         time = this.hashCode() % 3;
     }
 
