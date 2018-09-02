@@ -2,14 +2,14 @@ package pool;
 
 import java.util.UUID;
 
-public class Query {
+public class Event {
     private int id;
 
     private String uuid;
 
-    private QueryType type;
+    private EventType type;
 
-    public Query(int id, QueryType type) {
+    public Event(int id, EventType type) {
         this.id = id;
         this.type = type;
         uuid = UUID.randomUUID().toString();
@@ -27,17 +27,17 @@ public class Query {
         this.id = id;
     }
 
-    public QueryType getType() {
+    public EventType getType() {
         return type;
     }
 
-    public void setType(QueryType type) {
+    public void setType(EventType type) {
         this.type = type;
     }
 
     @Override
     public String toString() {
-        return "Query {" +
+        return "Event {" +
                 "id: " + id +
                 ", uuid: " + uuid +
                 ", type: " + type +

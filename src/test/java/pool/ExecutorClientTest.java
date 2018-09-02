@@ -6,7 +6,7 @@ public class ExecutorClientTest {
     @Test
     public void test() {
         ExecutorClient executorClient = new ExecutorClient();
-        new QueryGenerator(10, executorClient);
+        new EventGenerator(10, executorClient, 10);
 
         try {
             Thread.sleep(10000);

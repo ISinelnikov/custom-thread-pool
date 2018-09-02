@@ -14,9 +14,10 @@ public class CustomThreadPool implements Executor {
 
     private volatile boolean isRunning = true;
 
-    //Текущие обрабатываемые id
-    private static Set<Integer> ids = new ConcurrentSkipListSet<>();
-    //Lock для ограничения записи в ids
+    //Обрабатываемые id
+    private static Set<Integer> currentIds = new ConcurrentSkipListSet<>();
+
+    //Lock для ограничения записи в currentIds
     private static Lock lock = new ReentrantLock();
 
     private String poolName;
@@ -25,7 +26,7 @@ public class CustomThreadPool implements Executor {
         this.poolName = poolName;
         workQueue = new ConcurrentLinkedQueue<>();
 
-        //Запускаем pool
+        //Заполняем pool
         for (int count = 0; count < poolSize; count++) {
             new Thread(new TaskWorker()).start();
         }
@@ -35,7 +36,7 @@ public class CustomThreadPool implements Executor {
         return workQueue;
     }
 
-    //Добавляем новую команду в очередь
+    //Добавляем новую задачу в очередь
     @Override
     public void execute(Runnable command) {
         if (isRunning) {
@@ -57,12 +58,14 @@ public class CustomThreadPool implements Executor {
         boolean isSuccess = false;
 
         //Если такой id уже обрабатывается
-        if (ids.contains(id)) return false;
+        if (currentIds.contains(id)) return false;
 
+        //Захватываем монитор класса
         lock.lock();
         try {
-            if (!ids.contains(id)) {
-                ids.add(id);
+            //Повторная проверка занятости id
+            if (!currentIds.contains(id)) {
+                currentIds.add(id);
                 isSuccess = true;
             }
         } finally {
@@ -71,27 +74,31 @@ public class CustomThreadPool implements Executor {
         return isSuccess;
     }
 
+    /**
+     * Исполнитель задач из очереди
+     */
     private final class TaskWorker implements Runnable {
         @Override
         public void run() {
             while (isRunning) {
+                //Получаем задачу
                 QueryWorker nextTask = (QueryWorker) workQueue.poll();
 
                 if (nextTask != null) {
-                    int id = nextTask.getQuery().getId();
+                    int id = nextTask.getEvent().getId();
 
                     //Пытаемся получить право работать с данным id
-                    System.out.println(poolName + ": Попытка получить право работы с id " + id + " для задачи " + nextTask.getQuery().getUuid());
+                    System.out.println(poolName + ": Попытка получить право работы с id " + id + " для задачи " + nextTask.getEvent().getUuid());
                     while (true) {
                         if (tryLockByWeight(id)) break;
                     }
-                    System.out.println(poolName + ": Получено право работы с id " + id + " для задачи " + nextTask.getQuery().getUuid());
+                    System.out.println(poolName + ": Получено право работы с id " + id + " для задачи " + nextTask.getEvent().getUuid());
                     //Если захватили возможность работы с данным id
                     try {
                         nextTask.run();
                     } finally {
                         //Освобождаем возможность повторного использования id
-                        ids.remove(id);
+                        currentIds.remove(id);
                     }
                 }
             }
